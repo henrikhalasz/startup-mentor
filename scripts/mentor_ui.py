@@ -95,7 +95,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🚀 Ask Your Startup Mentor")
-st.caption("Advice in the spirit of Paul Graham & Sam Altman")
+st.caption("Advice in the style of Paul Graham & Sam Altman")
 
 if "history" not in st.session_state:
     st.session_state.history = []
@@ -130,7 +130,7 @@ if user_prompt := st.chat_input("Ask a startup question…"):
             for delta in mentor_response_stream(user_prompt, st.session_state.history):
                 partial_text += delta
                 mentor_placeholder.markdown(partial_text)
-                time.sleep(0.01)  # tiny delay to make the typing effect visible
+            
         except Exception as e:
             # Fallback to non-streaming if there's an error
             print(f"Streaming failed, falling back to non-streaming: {str(e)}")

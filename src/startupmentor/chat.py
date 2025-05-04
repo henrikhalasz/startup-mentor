@@ -4,6 +4,7 @@ import google.generativeai as genai
 from startupmentor.client import client as gemini_client
 import os
 from typing import List, Tuple
+import time
 
 # Load .env
 from dotenv import load_dotenv
@@ -160,8 +161,21 @@ def mentor_response_stream(query: str, history: list[tuple[str, str]]):
         )
         # The generator yields "chunks" with .text
         for chunk in response:
-            yield chunk.text
+            # Break down the chunk into smaller pieces for better typing effect
+            text = chunk.text
+            # If the chunk is larger than 3 characters, break it into smaller pieces
+            if len(text) > 3:
+                for i in range(0, len(text), 3):
+                    yield text[i:i+3]
+                    # Add a tiny delay between mini-chunks
+                    time.sleep(0.02)
+            else:
+                yield text
     except Exception:
         # Fallback: one‑shot (non‑stream) then yield once
         full = mentor_response(query, history)
-        yield full
+        # Simulate typing by yielding characters or small chunks
+        for i in range(0, len(full), 3):
+            yield full[i:i+3]
+            time.sleep(0.02)
+

@@ -111,13 +111,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - LLM responses powered by [Google's Gemini](https://ai.google.dev/)
 - Essays and knowledge from Paul Graham and Sam Altman's public writings
 
-## License
-
-[MIT](LICENSE)
-
----
-
-Made with ❤️ for builders and founders everywhere
 
 
 
