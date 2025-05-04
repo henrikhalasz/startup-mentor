@@ -1,0 +1,13 @@
+[server]
+# Set the entry point to our standalone streamlit_app.py
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+serverAddress = "localhost"
+serverPort = 8501
+
+[runner]
+# The file to run as the main entry point
+main = "streamlit_app.py" 
