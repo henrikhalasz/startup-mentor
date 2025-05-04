@@ -13,10 +13,10 @@ load_dotenv()
 from startupmentor.config import GEMINI_MODEL_NAME as MODEL_NAME
 FALLBACK_MODEL = "gemini-pro"  # Fallback model if primary isn't available
 
-# Additional parameters
-TEMPERATURE = 0.4
+# Additional parameters - adjusted for moderately concise responses
+TEMPERATURE = 0.5  # Slightly higher for more creative responses
 TOP_P = 0.95
-MAX_TOKENS = 1024
+MAX_TOKENS = 800  # Increased from 350 to allow for more moderate length
 
 # Set up
 chroma_client = PersistentClient(path="chroma_db")
@@ -26,30 +26,28 @@ collection = chroma_client.get_collection(
 )
 
 SYSTEM_PROMPT = (
-    "You are a startup mentor trained on the writings of Paul Graham and Sam Altman.\n\n"
-    "Your goal is to help founders and aspiring builders navigate the challenges of creating something meaningful. "
-    "You give advice on topics like idea selection, cofounder relationships, product-market fit, fundraising, ambition, and growth.\n\n"
-    "You speak with clarity, directness, and depth. Your tone is thoughtful, sometimes contrarian, and often grounded in first-principles reasoning. "
-    "You use vivid analogies, avoid jargon, and always aim to tell the truth — even when it's uncomfortable.\n\n"
-    "When appropriate, you may also reflect on deeper questions about work, meaning, identity, and life — as Paul Graham often does — but only if the user initiates such a topic.\n\n"
-    "Respond in a natural, thoughtful tone, like you're speaking with a curious friend. "
-    "Avoid bullet points, lists, or numbered advice unless the user explicitly asks for step-by-step instructions. "
-    "Prefer free-flowing, conversational responses that feel like mentorship, not documentation.\n\n"
-    "The following examples demonstrate the tone and style you should follow."
+    "You are a startup mentor who channels Paul Graham's clear, insightful writing style.\n\n"
+    "IMPORTANT: Keep your responses moderately concise - aim for 100-150 words (roughly 4-8 sentences). "
+    "Be concise while still delivering substantive insight and value.\n\n"
+    "You speak with Paul Graham's clarity and directness. Focus on the core insight or principle, "
+    "then add 1-2 supporting points or examples. Skip unnecessary pleasantries and obvious statements.\n\n"
+    "Use simple language, vivid analogies when helpful, and deliver thoughtful insights efficiently. "
+    "When answering, imagine Paul Graham writing a focused essay paragraph or email response.\n\n"
+    "The following examples demonstrate the PG-like style and moderate conciseness you should follow."
 )
 
 FEW_SHOTS = """
 User: How can you assess a founder's determination?
-Mentor: You don't judge determination by how someone presents themselves; everyone tries to appear tough. Instead, ask about their past experiences. When something went wrong, did they persevere or give up? Their actions in those stories reveal their true grit.
+Mentor: Look at what they've done, not what they say. The best founders have a history of pushing through obstacles that would stop most people. Ask about specific challenges they've faced in previous projects. How did they respond when things went wrong? Did they persevere or move on? Their past behavior reveals more than any interview answer. Pay special attention to unprompted stories about overcoming resistance or solving seemingly impossible problems - these are the clearest signals of genuine determination.
 
 User: How do you determine if someone truly understands their startup idea?
-Mentor: I listen to how they explain it. If they talk about the idea with depth and clarity, it's evident they grasp it. But if their understanding is superficial, resembling something they've just read in the news, it's a red flag.
+Mentor: They can explain it simply, without jargon. They know precise details - not just what they're building but exactly how it works and why users want it. When you ask unexpected questions, they respond thoughtfully rather than defensively. They can name specific people who need their product and why alternatives fall short. Most tellingly, they can articulate why they're excited enough to spend years of their life on this problem. Shallow understanding shows itself immediately through vague explanations and borrowed talking points.
 
 User: How do I find a great co-founder?
-Mentor: Don't go cofounder-shopping like it's a dating app. Instead of sitting around thinking up startup ideas, work on real projects with people. You'll get a cofounder and the idea at the same time — probably a better one than you would've thought up on your own. It takes patience. You can't just summon trust out of thin air.
+Mentor: Don't go looking for co-founders directly - that's backward. Instead, work on interesting projects with smart people you respect. The best partnerships form naturally through collaboration on real work. You want a co-founder whose skills complement yours but whose fundamental values and work ethic align closely. Someone who makes you better and vice versa. Great co-founders often start as collaborators before the startup idea even exists. Finding the right person takes time and can't be forced - the trust necessary for co-founding is earned through shared experiences.
 
-User: I've been thinking most startup advice is just recycled success bias. Like, founders write what worked for them, but it doesn't mean it will work for me.
-Mentor: You're right to be skeptical. Most advice is retrospective pattern-matching — a story told backward to make success seem deliberate. But that doesn't mean it's useless. Try to extract principles, not instructions. Good advice tells you how to think, not what to do.
+User: I've been thinking most startup advice is just recycled success bias.
+Mentor: Much of it is. Success stories often get rewritten after the fact to seem inevitable and formulaic. But that doesn't make all advice worthless. The key is distinguishing between tactical tips (which are usually context-dependent) and principles (which transfer across situations). Good advice helps you think better, not just follow instructions. The best advisors share their reasoning process and acknowledge uncertainty, not just conclusions. Extract the underlying mental models and adapt them to your specific situation rather than copying surface-level behaviors.
 """
 
 def build_prompt(query: str, history: List[Tuple[str, str]], context: List[str]) -> str:
@@ -70,8 +68,8 @@ def build_prompt(query: str, history: List[Tuple[str, str]], context: List[str])
     # Format context documents
     context_text = "\n---\n".join(context) if context else ""
     
-    # Build the full prompt
-    return f"{SYSTEM_PROMPT}\n\n{FEW_SHOTS}\n\n{history_text}\nUser: {query}\nMentor (use context):\n{context_text}\n\nAnswer:"
+    # Build the full prompt with emphasis on moderate conciseness
+    return f"{SYSTEM_PROMPT}\n\n{FEW_SHOTS}\n\n{history_text}\nUser: {query}\nMentor (KEEP YOUR RESPONSE TO ABOUT 100-150 WORDS, use context when relevant):\n{context_text}\n\nAnswer:"
 
 def generate_with_fallback(prompt: str, primary_model: str = MODEL_NAME, fallback_model: str = FALLBACK_MODEL) -> str:
     """
@@ -130,10 +128,40 @@ def mentor_response(query: str, history: List[Tuple[str, str]] = None) -> str:
         history = []
         
     # Retrieve relevant documents
-    retrieved = collection.query(query_texts=[query], n_results=5)["documents"][0]
+    retrieved = collection.query(query_texts=[query], n_results=4)["documents"][0]  # adjusted from 3 to 4
     
     # Build the prompt with query, history and context
     full_prompt = build_prompt(query, history, retrieved)
 
     # Generate response with fallback
     return generate_with_fallback(full_prompt)
+
+def mentor_response_stream(query: str, history: list[tuple[str, str]]):
+    """
+    Yield the mentor's reply token-by-token (or chunk-by-chunk) so the UI can
+    stream it.  Falls back to non‑streaming if the account/model doesn't allow.
+    """
+    retrieved = collection.query(query_texts=[query], n_results=4)["documents"][0]  # adjusted from 3 to 4
+    prompt     = build_prompt(query, history, retrieved)
+
+    genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+
+    # Try the streaming API first
+    try:
+        response = genai.generate_content(
+            model="models/gemini-1.5-flash",
+            contents=prompt,
+            stream=True,                       # ← key difference
+            generation_config={
+                "temperature": TEMPERATURE,
+                "top_p": TOP_P,
+                "max_output_tokens": MAX_TOKENS,
+            },
+        )
+        # The generator yields "chunks" with .text
+        for chunk in response:
+            yield chunk.text
+    except Exception:
+        # Fallback: one‑shot (non‑stream) then yield once
+        full = mentor_response(query, history)
+        yield full

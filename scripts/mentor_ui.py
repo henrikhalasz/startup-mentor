@@ -10,6 +10,14 @@ import sys
 import time
 from pathlib import Path
 from dotenv import load_dotenv
+import streamlit as st
+
+# Set page config first - must be the first Streamlit command
+st.set_page_config(
+    page_title="Startup Mentor",
+    page_icon="🚀",
+    layout="wide"
+)
 
 # Print debug information
 print(f"Python path: {sys.path}")
@@ -21,8 +29,6 @@ src_path = str(project_root / "src")
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
     print(f"Added {src_path} to sys.path")
-
-import streamlit as st
 
 load_dotenv()
 
@@ -57,13 +63,6 @@ except ImportError as e:
     print(f"Error importing mentor_response: {e}")
     st.error("Failed to import mentor_response. Please check your Python path configuration.")
     USE_STREAMING = False
-
-# ── Streamlit page config ────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="Startup Mentor",
-    page_icon="🚀",
-    layout="wide"
-)
 
 # Custom CSS for better styling
 st.markdown("""
