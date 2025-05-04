@@ -1,0 +1,145 @@
+RAQs
+
+RAQs
+
+These are questions that I've only been asked once or twice, but
+which seem especially interesting.
+Why don't more painters have hacking jobs?
+Probably for the same
+reason that few hackers take up painting.  They both seem
+from the outside like great abstruse mysteries.  You can
+learn great abstruse mysteries as a teenager, because
+everything is a mystery at that point anyway.  And you have the
+boundless self confidence that comes from ignorance.  But unless you
+learn both as a teenager, which is rare, you'll be afraid
+of the other later.
+What should I read to learn more about history?
+The way to do it is piecemeal.  You could just sit down and
+try reading Roberts's 
+History of the World
+ cover
+to cover, but you'd probably lose interest.  I think it's
+a better plan to read books about specific topics, even
+if you don't understand everything the first time
+through.
+Here are the most exciting ones I can think of:
+Clark, 
+Civilisation
+
+White, 
+Medieval Technology and Social Change
+
+McEvedy, 
+Penguin Atlases of Ancient and Medieval History
+
+Laslett, 
+The World We Have Lost
+
+Bernal, 
+The Extension of Man
+
+Franklin, 
+Autobiography
+
+Girouard, 
+Life in the English Country House
+
+Pirenne, 
+Mohammed and Charlemagne
+
+Runciman, 
+The Fall of Constantinople
+
+Cipolla, 
+Guns, Sails and Empires
+
+Hadas, 
+A History of Rome
+
+Oman, 
+The Art of War in the Middle Ages
+
+Vasari, 
+Lives of the Artists
+
+Bovill, 
+The Golden Trade of the Moors
+
+Caesar, 
+Gallic Wars
+
+Kuhn, 
+The Copernican Revolution
+Couldn't you add something equivalent to Lisp macros to 
+languages like Perl or Python?
+Not without turning them into dialects of Lisp.
+Real macros need to operate on the parse tree of the program.  
+To allow that in a language with syntax, you have to
+(a) make public the translation from 
+source code to parse trees, and (b) give the programmer the
+opportunity to run programs on parse trees before they go on to 
+the compiler.
+But it would be hard to do that without
+creating a notation for parse trees; and once you do, 
+your language has become a skin on Lisp, in much 
+the same way that in 
+
+OS X
+, the Mac OS became a skin on Unix.
+How can I avoid turning into a pointy-haired boss?
+The pointy-haired boss is a manager who doesn't program.  So the 
+surest way to avoid becoming him is to stay a programmer. 
+What tempts programmers to become
+managers are companies with old-fashioned corporate structure, where
+the only way to advance in salary and prestige is to go into
+management.  So if you want to avoid becoming a PHB, avoid
+such companies, and work for (or 
+start
+) startups.
+I never had to manage anyone in our startup, even though I
+was the president.  The other hackers
+were my peers, and would have given me the raspberry if I'd tried
+to "manage" them.  We operated by consensus.  And the rest of the 
+company reported
+to our experienced COO, who was also more of a peer.
+Why be a manager when you could be a founder or early
+employee at a startup?
+I'm about to become a teacher.  How can I be a good one?
+The best teachers I remember from school had three things
+in common:
+(1) They had high standards.  Like three year olds testing their
+parents, students will test teachers to see if they can
+get away with low-quality work or bad behavior.  They won't 
+respect the teachers who don't call them on it.
+(2) They liked us.  Like dogs, kids can tell very accurately
+whether or not someone wishes them well.  I think a lot of our
+teachers either never liked kids much, or got burned out and
+started not to like them.  It's hard to be a good teacher once
+that happens.  I can't think of one teacher in all the schools
+I went to who managed to be good despite disliking students.
+(3) They were interested in the subject.  Most of the public
+school teachers I had weren't really interested in what they 
+taught.  Enthusiasm is contagious, and so is boredom.
+Two startups want to hire me.
+Which should I choose?
+The one with the most determined and smartest founders (in
+that order) is the more likely to succeed.  Pretend you're
+an investor—which you are, of your time—and ask
+yourself which of the two you'd buy stock in.
+How can I become really good at Lisp programming?
+Write an application big enough that you can make the lower
+levels into a language layer.  Embedded languages (or as they
+now seem to be called, DSLs) are the essence of Lisp hacking.
+What philosophy books would you recommend?
+I can't think of any I'd recommend. What I learned from trying to study philosophy is that the place to look is in other fields. If you understand math or history or aeronautical engineering very well, the most abstract of the things you know are what philosophy is supposed to be teaching. Books on philosophy per se are either highly technical stuff that doesn't matter much, or vague concatenations of abstractions their own authors didn't fully understand (e.g. Hegel).
+It can be interesting to study ancient philosophy, but more as a kind of accident report than to teach you anything useful.
+I want to start a startup, but I don't know how to program.  How 
+long will it take to learn?
+I would guess a smart person can learn to hack sufficiently well in
+6 months to a year.  The best way to do it would be to find some 
+startup to hire you in an initially menial capacity, and start
+learning to program on the side.  Then gradually
+work your way up from answering phones through system administration
+to actual software design.  There is always so much to do in a
+startup that people won't be too picky about your paper qualifications,
+if you can solve problems for them without screwing up.

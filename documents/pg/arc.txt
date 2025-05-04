@@ -1,0 +1,32 @@
+Arc
+
+Arc
+
+Arc is a new dialect of Lisp we're working on.   You can 
+find an early release and ask questions at 
+
+arclanguage.org
+.
+The Arc community is very newbie-friendly,
+because all the users are newbies to some extent.
+To get an idea of where we eventually hope to take Arc,
+see 
+Being Popular
+
+and 
+The Hundred-Year Language
+.
+
+Forum
+Tutorial
+Get Arc
+Arc's Out
+Take the Arc Challenge
+First Priority: Core Language
+Arc FAQ
+Help Us
+Design Philosophy
+Why Arc Isn't Especially Object-Oriented
+LFM and LFSP
+Ideas People Have Sent Us
+Old Arc Stuff
