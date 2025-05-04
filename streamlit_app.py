@@ -9,6 +9,7 @@ import streamlit as st
 import google.generativeai as genai
 from dotenv import load_dotenv
 from pathlib import Path
+import time
 
 # Load environment variables
 load_dotenv()
@@ -25,12 +26,13 @@ ROOT_DIR = Path(__file__).resolve().parent
 AVATAR_PATH = ROOT_DIR / "assets" / "mentor_avatar.png"
 
 # Configure Gemini
-try:
-    api_key = os.environ.get("GOOGLE_API_KEY")
-    if not api_key:
-        st.error("No Google API key found. Please set the GOOGLE_API_KEY environment variable.")
-        st.stop()
+api_key = os.environ.get("GOOGLE_API_KEY")
+if not api_key:
+    st.error("No Google API key found. Please add GOOGLE_API_KEY to Streamlit Cloud's secrets.")
+    st.info("If you're the app owner, go to 'Manage app' → 'Secrets' and add your Google API key.")
+    st.stop()
     
+try:
     genai.configure(api_key=api_key)
     MODEL = "gemini-1.5-flash"
     TEMPERATURE = 0.5
@@ -94,10 +96,8 @@ for user_msg, mentor_msg in st.session_state.history:
     st.chat_message("user").markdown(user_msg)
     
     # Mentor message with avatar
-    st.chat_message(
-        "assistant", 
-        avatar=str(AVATAR_PATH) if os.path.exists(AVATAR_PATH) else None
-    ).markdown(mentor_msg)
+    avatar_path = str(AVATAR_PATH) if AVATAR_PATH.exists() else None
+    st.chat_message("assistant", avatar=avatar_path).markdown(mentor_msg)
 
 # Simplified mentor response function
 def mentor_response_stream(prompt, history=[]):
@@ -122,7 +122,6 @@ def mentor_response_stream(prompt, history=[]):
                 for i in range(0, len(text), 3):
                     yield text[i:i+3]
                     # Add a tiny delay between mini-chunks
-                    import time
                     time.sleep(0.02)
             else:
                 yield text
@@ -135,10 +134,8 @@ if user_prompt := st.chat_input("Ask a startup question…"):
     st.chat_message("user").markdown(user_prompt)
 
     # Create mentor message container
-    mentor_container = st.chat_message(
-        "assistant",
-        avatar=str(AVATAR_PATH) if os.path.exists(AVATAR_PATH) else None
-    )
+    avatar_path = str(AVATAR_PATH) if AVATAR_PATH.exists() else None
+    mentor_container = st.chat_message("assistant", avatar=avatar_path)
     mentor_placeholder = mentor_container.empty()
 
     # Generate response with streaming
@@ -153,4 +150,8 @@ if user_prompt := st.chat_input("Ask a startup question…"):
         mentor_placeholder.markdown(partial_text)
 
     # Record conversation in history
-    st.session_state.history.append((user_prompt, partial_text)) 
+    st.session_state.history.append((user_prompt, partial_text))
+
+# Add footer with info
+st.markdown("---")
+st.caption("Built with Streamlit, powered by Google Gemini. The mentor speaks in a style inspired by Paul Graham and Sam Altman. [GitHub Repository](https://github.com/henrikhalasz/startup-mentor)") 
