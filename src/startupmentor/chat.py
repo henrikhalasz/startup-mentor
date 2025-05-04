@@ -3,8 +3,11 @@ from startupmentor.embeddings import GeminiEmbeddingFunction
 import google.generativeai as genai
 from startupmentor.client import client as gemini_client
 import os
-from typing import List, Tuple
+import json
+from pathlib import Path
+from typing import List, Tuple, Dict, Any
 import time
+import random
 
 # Load .env
 from dotenv import load_dotenv
@@ -19,35 +22,113 @@ TEMPERATURE = 0.5  # Slightly higher for more creative responses
 TOP_P = 0.95
 MAX_TOKENS = 800  # Increased from 350 to allow for more moderate length
 
+# Paths
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PACKAGED_DATA_PATH = PROJECT_ROOT / "streamlit_data" / "packaged_documents.json"
+SAMPLE_DATA_PATH = PROJECT_ROOT / "streamlit_data" / "sample_documents.json"
+
+# Document storage
+packaged_documents = []
+document_ids = []
+document_metadatas = []
+
 # Set up
 # Check if running on Streamlit Cloud (using environment variable)
 IS_STREAMLIT_CLOUD = os.environ.get('STREAMLIT_CLOUD', False)
 
-if IS_STREAMLIT_CLOUD:
-    # Use in-memory database for Streamlit Cloud
-    print("Running on Streamlit Cloud. Using in-memory database.")
-    chroma_client = Client()
-    # Try to load from a precomputed embeddings file if available
+# Helper function to load packaged documents
+def load_packaged_documents() -> Dict[str, List]:
+    """Load documents from the packaged JSON file."""
     try:
-        collection = chroma_client.create_collection(
-            name="startupmentor",
-            embedding_function=GeminiEmbeddingFunction(document_mode=False)
-        )
-        # Add some minimal dummy data for testing
-        collection.add(
-            documents=["Paul Graham believes startups should focus on growth.",
-                      "Sam Altman advises founders to talk to users.",
-                      "The best startup ideas solve real problems."],
-            ids=["1", "2", "3"]
-        )
-        print("Created in-memory collection with sample data.")
+        # Try the full dataset first
+        if PACKAGED_DATA_PATH.exists():
+            print(f"Loading packaged documents from {PACKAGED_DATA_PATH}")
+            with open(PACKAGED_DATA_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        # Fall back to the sample dataset
+        elif SAMPLE_DATA_PATH.exists():
+            print(f"Loading sample documents from {SAMPLE_DATA_PATH}")
+            with open(SAMPLE_DATA_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        else:
+            print("No packaged documents found, using fallback data")
+            # Provide minimal fallback data
+            return {
+                "documents": [
+                    "Paul Graham believes startups should focus on growth.",
+                    "Sam Altman advises founders to talk to users.",
+                    "The best startup ideas solve real problems.",
+                    "Good founders are determined and resilient.",
+                    "Building something people want is the key to startup success."
+                ],
+                "ids": ["1", "2", "3", "4", "5"],
+                "metadatas": [{}, {}, {}, {}, {}]
+            }
     except Exception as e:
-        print(f"Error creating in-memory collection: {str(e)}")
-        # Fallback to empty collection
-        collection = chroma_client.create_collection(
-            name="startupmentor",
-            embedding_function=GeminiEmbeddingFunction(document_mode=False)
-        )
+        print(f"Error loading packaged documents: {str(e)}")
+        # Return minimal fallback data on error
+        return {
+            "documents": [
+                "Paul Graham believes startups should focus on growth.",
+                "Sam Altman advises founders to talk to users.",
+                "The best startup ideas solve real problems."
+            ],
+            "ids": ["1", "2", "3"],
+            "metadatas": [{}, {}, {}]
+        }
+
+# ChromaDB collection object or packaged documents
+if IS_STREAMLIT_CLOUD:
+    # Use packaged documents for Streamlit Cloud
+    print("Running on Streamlit Cloud. Using packaged documents.")
+    data = load_packaged_documents()
+    packaged_documents = data["documents"]
+    document_ids = data["ids"]
+    document_metadatas = data["metadatas"]
+    print(f"Loaded {len(packaged_documents)} documents")
+    
+    # Create a simple collection interface for compatibility
+    class SimpleCollection:
+        def __init__(self, documents, ids, metadatas):
+            self.documents = documents
+            self.ids = ids
+            self.metadatas = metadatas
+        
+        def query(self, query_texts, n_results=4):
+            """Simple keyword-based query to simulate vector search."""
+            results = []
+            indices = []
+            
+            # For each query text
+            for query in query_texts:
+                query = query.lower()
+                # Score documents based on term frequency
+                scores = []
+                for i, doc in enumerate(self.documents):
+                    # Simple scoring: count query terms in document
+                    score = 0
+                    for term in query.split():
+                        if term.lower() in doc.lower():
+                            score += 1
+                    scores.append((i, score))
+                
+                # Sort by score descending
+                scored_indices = [i for i, _ in sorted(scores, key=lambda x: x[1], reverse=True)]
+                # Take top n_results, or random if no matches
+                if any(scores[i][1] > 0 for i in scored_indices[:n_results]):
+                    indices = scored_indices[:n_results]
+                else:
+                    # If no good matches, include some random documents
+                    indices = list(range(min(n_results, len(self.documents))))
+                    random.shuffle(indices)
+                
+                # Get the documents at those indices
+                matched_docs = [self.documents[i] for i in indices]
+                results.append(matched_docs)
+            
+            return {"documents": results}
+    
+    collection = SimpleCollection(packaged_documents, document_ids, document_metadatas)
 else:
     # Use persistent database for local development
     print("Running locally. Using persistent database.")
@@ -173,8 +254,9 @@ def mentor_response_stream(query: str, history: list[tuple[str, str]]):
     Yield the mentor's reply token-by-token (or chunk-by-chunk) so the UI can
     stream it.  Falls back to non‑streaming if the account/model doesn't allow.
     """
+    # Retrieve relevant documents
     retrieved = collection.query(query_texts=[query], n_results=4)["documents"][0]  # adjusted from 3 to 4
-    prompt     = build_prompt(query, history, retrieved)
+    prompt = build_prompt(query, history, retrieved)
 
     genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 
@@ -202,7 +284,8 @@ def mentor_response_stream(query: str, history: list[tuple[str, str]]):
                     time.sleep(0.02)
             else:
                 yield text
-    except Exception:
+    except Exception as e:
+        print(f"Streaming failed, falling back to non-streaming: {str(e)}")
         # Fallback: one‑shot (non‑stream) then yield once
         full = mentor_response(query, history)
         # Simulate typing by yielding characters or small chunks
