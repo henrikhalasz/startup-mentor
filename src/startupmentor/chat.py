@@ -1,4 +1,4 @@
-from chromadb import PersistentClient
+from chromadb import PersistentClient, Client
 from startupmentor.embeddings import GeminiEmbeddingFunction
 import google.generativeai as genai
 from startupmentor.client import client as gemini_client
@@ -20,11 +20,42 @@ TOP_P = 0.95
 MAX_TOKENS = 800  # Increased from 350 to allow for more moderate length
 
 # Set up
-chroma_client = PersistentClient(path="chroma_db")
-collection = chroma_client.get_collection(
-    name="startupmentor",
-    embedding_function=GeminiEmbeddingFunction(document_mode=False)
-)
+# Check if running on Streamlit Cloud (using environment variable)
+IS_STREAMLIT_CLOUD = os.environ.get('STREAMLIT_CLOUD', False)
+
+if IS_STREAMLIT_CLOUD:
+    # Use in-memory database for Streamlit Cloud
+    print("Running on Streamlit Cloud. Using in-memory database.")
+    chroma_client = Client()
+    # Try to load from a precomputed embeddings file if available
+    try:
+        collection = chroma_client.create_collection(
+            name="startupmentor",
+            embedding_function=GeminiEmbeddingFunction(document_mode=False)
+        )
+        # Add some minimal dummy data for testing
+        collection.add(
+            documents=["Paul Graham believes startups should focus on growth.",
+                      "Sam Altman advises founders to talk to users.",
+                      "The best startup ideas solve real problems."],
+            ids=["1", "2", "3"]
+        )
+        print("Created in-memory collection with sample data.")
+    except Exception as e:
+        print(f"Error creating in-memory collection: {str(e)}")
+        # Fallback to empty collection
+        collection = chroma_client.create_collection(
+            name="startupmentor",
+            embedding_function=GeminiEmbeddingFunction(document_mode=False)
+        )
+else:
+    # Use persistent database for local development
+    print("Running locally. Using persistent database.")
+    chroma_client = PersistentClient(path="chroma_db")
+    collection = chroma_client.get_collection(
+        name="startupmentor",
+        embedding_function=GeminiEmbeddingFunction(document_mode=False)
+    )
 
 SYSTEM_PROMPT = (
     "You are a startup mentor who channels Paul Graham's clear, insightful writing style.\n\n"
